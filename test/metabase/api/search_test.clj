@@ -4,7 +4,8 @@
              [string :as str]
              [test :refer :all]]
             [metabase
-             [models :refer [Card CardFavorite Collection Dashboard DashboardFavorite Database Metric PermissionsGroup PermissionsGroupMembership Pulse Segment Table]]
+             [models :refer [Card CardFavorite Collection Dashboard DashboardCard DashboardFavorite Database Metric
+                             PermissionsGroup PermissionsGroupMembership Pulse PulseCard Segment Table]]
              [test :as mt]
              [util :as u]]
             [metabase.api.search :as api.search]
