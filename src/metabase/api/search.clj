@@ -20,6 +20,7 @@
              [metric :refer [Metric]]
              [permissions :as perms]
              [pulse :refer [Pulse]]
+             [pulse-card :refer [PulseCard]]
              [segment :refer [Segment]]
              [table :refer [Table]]]
             [metabase.util
@@ -308,7 +309,17 @@
   (-> (base-query-for-model Pulse search-ctx)
       (add-collection-join-and-where-clauses :pulse.collection_id search-ctx)
       ;; We don't want alerts included in pulse results
-      (h/merge-where [:= :alert_condition nil])))
+      (h/merge-where [:= :alert_condition nil])
+      ;; don't include Pulses that are actually just used for Dashboards -- this is determined by checking whether
+      ;; *any* of its PulseCards have a dashboard_card_id
+      (h/merge-left-join [{:select   [[:pulse_id :id]]
+                           :from     [PulseCard]
+                           :where    [:not= :dashboard_card_id nil]
+                           :group-by [:pulse_id]
+                           :having   [:>= (hsql/call :count :*) 1]}
+                          :dashboard-pulse]
+                         [:= :pulse.id :dashboard-pulse.id])
+      (h/merge-where [:= :dashboard-pulse.id nil])))
 
 (s/defmethod search-query-for-model (class Metric)
   [_ search-ctx :- SearchContext]

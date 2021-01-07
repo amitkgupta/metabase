@@ -4,14 +4,14 @@
              [string :as str]
              [test :refer :all]]
             [metabase
-             [models :refer [Card CardFavorite Collection Dashboard DashboardFavorite Database Metric PermissionsGroup
-                             PermissionsGroupMembership Pulse Segment Table]]
+             [models :refer [Card CardFavorite Collection Dashboard DashboardFavorite Database Metric PermissionsGroup PermissionsGroupMembership Pulse Segment Table]]
              [test :as mt]
              [util :as u]]
             [metabase.api.search :as api.search]
             [metabase.models
              [permissions :as perms]
              [permissions-group :as group]]
+            [schema.core :as s]
             [toucan.db :as db]))
 
 (def ^:private default-search-row
@@ -373,3 +373,36 @@
                   (filter #(and (= (:model %) "collection")
                                 (#{"Normal Collection" "Coin Collection"} (:name %))))
                   (map :name)))))))
+
+(deftest no-dashboard-subscription-pulses-test
+  (testing "Pulses used for Dashboard subscriptions should not be returned by search results (#14190)"
+    (letfn [(search-for-pulses [{pulse-id :id}]
+              (->> (mt/user-http-request :crowberto :get "search?q=electro")
+                   (filter #(and (= (:model %) "pulse")
+                                 (= (:id %) pulse-id)))
+                   first))]
+      (mt/with-temp Pulse [pulse {:name "Electro-Magnetic Pulse"}]
+        (testing "sanity check: should be able to fetch a Pulse normally"
+          (is (schema= {:name (s/eq "Electro-Magnetic Pulse")
+                        s/Keyword s/Any}
+                       (search-for-pulses pulse))))
+        (mt/with-temp* [Card      [card-1]
+                        PulseCard [pc-1 {:pulse_id (:id pulse), :card_id (:id card-1)}]
+                        Card      [card-2]
+                        PulseCard [pc-2 {:pulse_id (:id pulse), :card_id (:id card-2)}]]
+          (testing "Create some Pulse Cards: should still be able to search for it it"
+            (is (schema= {:name     (s/eq "Electro-Magnetic Pulse")
+                          s/Keyword s/Any}
+                         (search-for-pulses pulse))))
+          (testing "Now add one of those PulseCards to a Dashboard: Pulse should no longer come back from search-results"
+            (mt/with-temp* [Dashboard     [dashboard]
+                            DashboardCard [dashcard-1 {:card_id (:id card-1), :dashboard_id (:id dashboard)}]
+                            DashboardCard [dashcard-2 {:card_id (:id card-2), :dashboard_id (:id dashboard)}]]
+              (testing "Should be hidden if 1/2 PulseCard have dashboard_card_id"
+                (db/update! PulseCard (:id pc-1) :card_id (:id card-1), :dashboard_card_id (:id dashcard-1))
+                (is (= nil
+                       (search-for-pulses pulse))))
+              (testing "Should be hidden if 2/2 PulseCard have dashboard_card_id"
+                (db/update! PulseCard (:id pc-2) :card_id (:id card-2), :dashboard_card_id (:id dashcard-2))
+                (is (= nil
+                       (search-for-pulses pulse)))))))))))
