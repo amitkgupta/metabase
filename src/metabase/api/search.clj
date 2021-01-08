@@ -3,12 +3,8 @@
             [clojure.tools.logging :as log]
             [compojure.core :refer [GET]]
             [flatland.ordered.map :as ordered-map]
-            [honeysql
-             [core :as hsql]
-             [helpers :as h]]
-            [metabase
-             [db :as mdb]
-             [util :as u]]
+            [honeysql.core :as hsql]
+            [honeysql.helpers :as h]
             [metabase.api.common :as api]
             [metabase.models
              [card :refer [Card]]
@@ -26,6 +22,21 @@
             [metabase.util
              [honeysql-extensions :as hx]
              [schema :as su]]
+            [metabase.db :as mdb]
+            [metabase.models.card :refer [Card]]
+            [metabase.models.card-favorite :refer [CardFavorite]]
+            [metabase.models.collection :as coll :refer [Collection]]
+            [metabase.models.dashboard :refer [Dashboard]]
+            [metabase.models.dashboard-favorite :refer [DashboardFavorite]]
+            [metabase.models.interface :as mi]
+            [metabase.models.metric :refer [Metric]]
+            [metabase.models.permissions :as perms]
+            [metabase.models.pulse :refer [Pulse]]
+            [metabase.models.segment :refer [Segment]]
+            [metabase.models.table :refer [Table]]
+            [metabase.util :as u]
+            [metabase.util.honeysql-extensions :as hx]
+            [metabase.util.schema :as su]
             [schema.core :as s]
             [toucan.db :as db]))
 

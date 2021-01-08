@@ -13,6 +13,14 @@
              [permissions :as perms]
              [permissions-group :as group]]
             [schema.core :as s]
+            [clojure.string :as str]
+            [clojure.test :refer :all]
+            [metabase.api.search :as api.search]
+            [metabase.models :refer [Card CardFavorite Collection Dashboard DashboardFavorite Database Metric PermissionsGroup PermissionsGroupMembership Pulse Segment Table]]
+            [metabase.models.permissions :as perms]
+            [metabase.models.permissions-group :as group]
+            [metabase.test :as mt]
+            [metabase.util :as u]
             [toucan.db :as db]))
 
 (def ^:private default-search-row
