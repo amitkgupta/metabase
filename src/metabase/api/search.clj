@@ -6,22 +6,6 @@
             [honeysql.core :as hsql]
             [honeysql.helpers :as h]
             [metabase.api.common :as api]
-            [metabase.models
-             [card :refer [Card]]
-             [card-favorite :refer [CardFavorite]]
-             [collection :as coll :refer [Collection]]
-             [dashboard :refer [Dashboard]]
-             [dashboard-favorite :refer [DashboardFavorite]]
-             [interface :as mi]
-             [metric :refer [Metric]]
-             [permissions :as perms]
-             [pulse :refer [Pulse]]
-             [pulse-card :refer [PulseCard]]
-             [segment :refer [Segment]]
-             [table :refer [Table]]]
-            [metabase.util
-             [honeysql-extensions :as hx]
-             [schema :as su]]
             [metabase.db :as mdb]
             [metabase.models.card :refer [Card]]
             [metabase.models.card-favorite :refer [CardFavorite]]
@@ -320,17 +304,9 @@
   (-> (base-query-for-model Pulse search-ctx)
       (add-collection-join-and-where-clauses :pulse.collection_id search-ctx)
       ;; We don't want alerts included in pulse results
-      (h/merge-where [:= :alert_condition nil])
-      ;; don't include Pulses that are actually just used for Dashboards -- this is determined by checking whether
-      ;; *any* of its PulseCards have a dashboard_card_id
-      (h/merge-left-join [{:select   [[:pulse_id :id]]
-                           :from     [PulseCard]
-                           :where    [:not= :dashboard_card_id nil]
-                           :group-by [:pulse_id]
-                           :having   [:>= (hsql/call :count :*) 1]}
-                          :dashboard-pulse]
-                         [:= :pulse.id :dashboard-pulse.id])
-      (h/merge-where [:= :dashboard-pulse.id nil])))
+      (h/merge-where [:and
+                      [:= :alert_condition nil]
+                      [:= :pulse.dashboard_id nil]])))
 
 (s/defmethod search-query-for-model (class Metric)
   [_ search-ctx :- SearchContext]

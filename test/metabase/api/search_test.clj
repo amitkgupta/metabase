@@ -1,26 +1,15 @@
 (ns metabase.api.search-test
-  (:require [clojure
-             [set :as set]
-             [string :as str]
-             [test :refer :all]]
-            [metabase
-             [models :refer [Card CardFavorite Collection Dashboard DashboardCard DashboardFavorite Database Metric
-                             PermissionsGroup PermissionsGroupMembership Pulse PulseCard Segment Table]]
-             [test :as mt]
-             [util :as u]]
-            [metabase.api.search :as api.search]
-            [metabase.models
-             [permissions :as perms]
-             [permissions-group :as group]]
-            [schema.core :as s]
+  (:require [clojure.set :as set]
             [clojure.string :as str]
             [clojure.test :refer :all]
             [metabase.api.search :as api.search]
-            [metabase.models :refer [Card CardFavorite Collection Dashboard DashboardFavorite Database Metric PermissionsGroup PermissionsGroupMembership Pulse Segment Table]]
+            [metabase.models :refer [Card CardFavorite Collection Dashboard DashboardCard DashboardFavorite Database
+                                     Metric PermissionsGroup PermissionsGroupMembership Pulse PulseCard Segment Table]]
             [metabase.models.permissions :as perms]
             [metabase.models.permissions-group :as group]
             [metabase.test :as mt]
             [metabase.util :as u]
+            [schema.core :as s]
             [toucan.db :as db]))
 
 (def ^:private default-search-row
@@ -403,15 +392,8 @@
             (is (schema= {:name     (s/eq "Electro-Magnetic Pulse")
                           s/Keyword s/Any}
                          (search-for-pulses pulse))))
-          (testing "Now add one of those PulseCards to a Dashboard: Pulse should no longer come back from search-results"
-            (mt/with-temp* [Dashboard     [dashboard]
-                            DashboardCard [dashcard-1 {:card_id (:id card-1), :dashboard_id (:id dashboard)}]
-                            DashboardCard [dashcard-2 {:card_id (:id card-2), :dashboard_id (:id dashboard)}]]
-              (testing "Should be hidden if 1/2 PulseCard have dashboard_card_id"
-                (db/update! PulseCard (:id pc-1) :card_id (:id card-1), :dashboard_card_id (:id dashcard-1))
-                (is (= nil
-                       (search-for-pulses pulse))))
-              (testing "Should be hidden if 2/2 PulseCard have dashboard_card_id"
-                (db/update! PulseCard (:id pc-2) :card_id (:id card-2), :dashboard_card_id (:id dashcard-2))
-                (is (= nil
-                       (search-for-pulses pulse)))))))))))
+          (testing "Now make this Pulse a dashboard subscription; Pulse should no longer come back from search-results"
+            (mt/with-temp* [Dashboard [dashboard]]
+              (db/update! Pulse (:id pulse) :dashboard_id (:id dashboard))
+              (is (= nil
+                     (search-for-pulses pulse))))))))))
