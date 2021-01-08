@@ -7907,11 +7907,12 @@ databaseChangeLog:
                   name: dashboard_id
                   type: int
                   remarks: 'ID of the Dashboard if this Pulse is a Dashboard Subscription.'
-                  # FK constraint is added below, see #14321
 
+  # FK constraint is added separately because deleteCascade doesn't work in addColumn -- see #14321
   - changeSet:
       id: 280
       author: camsaul
+      comment: Added 0.38.0 - Dashboard subscriptions
       changes:
         - addForeignKeyConstraint:
             baseTableName: pulse
